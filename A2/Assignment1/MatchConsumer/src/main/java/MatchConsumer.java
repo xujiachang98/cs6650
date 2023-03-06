@@ -1,0 +1,34 @@
+import com.google.gson.Gson;
+import com.rabbitmq.client.*;
+
+import java.io.IOException;
+import java.util.concurrent.*;
+
+public class MatchConsumer {
+    final static int POOL_SIZE = 200;
+    final static int NUM_REQUEST = 1000;
+
+
+    public static void main(String[] args) throws IOException, TimeoutException {
+        ConnectionFactory factory = new ConnectionFactory();
+        ConcurrentHashMap<String, int[]> MatchMap = new ConcurrentHashMap<>();
+        factory.setHost("35.160.148.1");
+        factory.setUsername("guest");
+        factory.setPassword("guest");
+        ExecutorService pool = Executors.newFixedThreadPool(POOL_SIZE);
+        SwipeMatch swipeMatch = new SwipeMatch();
+        Connection connection = factory.newConnection();
+        System.out.println("start match");
+        for (int i = 0; i < NUM_REQUEST; i++) {
+            pool.execute(new MatchRun(connection, swipeMatch));
+        }
+        System.out.println("match end");
+        pool.shutdown();
+        try {
+            pool.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+}
